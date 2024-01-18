@@ -5,9 +5,15 @@ Provides a handle to the terminal of the current process that is both readable a
 ## Example
 ```rust
 use terminal_trx::terminal;
+use std::io::{BufReader, BufRead as _, Write as _};
 
-let mut terminal = terminal();
+let mut terminal = terminal().unwrap();
+
 write!(terminal, "hello world").unwrap();
+
+let mut reader = BufReader::new(&mut terminal);
+let mut line = String::new();
+reader.read_line(&mut line).unwrap();
 ```
 
 ## License

@@ -174,15 +174,25 @@ pub(crate) struct TerminalLock {
 
 impl AsFd for super::Terminal {
     fn as_fd(&self) -> std::os::unix::prelude::BorrowedFd<'_> {
-        // self.0.lock().as_fd()
-        todo!()
+        self.0.file.as_fd()
+    }
+}
+
+impl AsFd for super::TerminalLock<'_> {
+    fn as_fd(&self) -> std::os::unix::prelude::BorrowedFd<'_> {
+        self.inner.file.as_fd()
     }
 }
 
 impl AsRawFd for super::Terminal {
     fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
-        // self.0.file.as_raw_fd()
-        todo!()
+        self.0.file.as_raw_fd()
+    }
+}
+
+impl AsRawFd for super::TerminalLock<'_> {
+    fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
+        self.inner.file.as_raw_fd()
     }
 }
 

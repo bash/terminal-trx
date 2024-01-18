@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parking_lot = "0.12.1"
+thiserror = "1.0.56"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.152"
