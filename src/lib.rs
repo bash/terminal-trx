@@ -2,8 +2,8 @@
 #![deny(clippy::undocumented_unsafe_blocks)]
 
 use std::cell::RefCell;
-use std::io;
 use std::sync::{Arc, OnceLock};
+use std::{error, fmt, io};
 
 #[cfg(unix)]
 mod unix;
@@ -14,6 +14,8 @@ use unix as imp;
 mod windows;
 #[cfg(windows)]
 use windows as imp;
+
+mod io_error;
 
 static TERMINAL: OnceLock<Result<ReentrantMutex<RefCell<imp::Terminal>>, Arc<io::Error>>> =
     OnceLock::new();
@@ -36,7 +38,7 @@ static TERMINAL: OnceLock<Result<ReentrantMutex<RefCell<imp::Terminal>>, Arc<io:
 /// * the standard error,
 /// * standard output,
 /// * and finally `CONOUT$`.
-pub fn terminal() -> Result<Terminal, Arc<io::Error>> {
+pub fn terminal() -> Result<Terminal, io::Error> {
     TERMINAL
         .get_or_init(|| {
             imp::terminal()
@@ -45,7 +47,7 @@ pub fn terminal() -> Result<Terminal, Arc<io::Error>> {
         })
         .as_ref()
         .map(Terminal)
-        .map_err(Arc::clone)
+        .map_err(io_error::shared_io_error)
 }
 
 /// A readable and writable handle to the terminal (or TTY).
