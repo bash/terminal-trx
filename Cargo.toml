@@ -1,0 +1,13 @@
+[package]
+name = "terminal-trx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+parking_lot = "0.12.1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.152"
+
+[dev-dependencies]
+static_assertions = "1.1.0"
