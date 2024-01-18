@@ -45,7 +45,7 @@ static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
 /// * and finally `/dev/tty`.
 ///
 /// ## Windows
-/// On Windows, the reading half is retrieved by first testing the standard input falling back to `CONIN$`. \
+/// On Windows, the reading half is retrieved by first testing the standard input, falling back to `CONIN$`. \
 /// The writing half is retrieved by successfully testing
 /// * the standard error,
 /// * standard output,
