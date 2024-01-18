@@ -1,8 +1,4 @@
-<center>
-
-# `terminal-trx`
-
-</center>
+# terminal-trx
 
 Provides a handle to the terminal of the current process that is both readable and writable.
 
