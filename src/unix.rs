@@ -255,9 +255,11 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
     let mut buf = Vec::with_capacity(64);
 
     loop {
+        // SAFETY: We pass the capacity of our vec to ttyname_r.
         let code = unsafe { libc::ttyname_r(fd.as_raw_fd(), buf.as_mut_ptr(), buf.capacity()) };
         match code {
-            0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
+            // SAFETY: We own the pointer and we know that if ttyname_r is successful, it returns a null-terminated string.
+            0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()) }.to_owned()),
             libc::ERANGE => buf.reserve(64),
             code => return Err(io::Error::from_raw_os_error(code)),
         }

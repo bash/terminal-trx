@@ -17,6 +17,7 @@ pub(super) fn set_terminal_attr(fd: BorrowedFd, termios: &termios) -> io::Result
     // TCSADRAIN
     //     the change occurs after all output written to fd has been transmitted.
     //     This function should be used when changing parameters that affect output.
+    // SAFETY: File descriptor is valid.
     to_io_result(unsafe { libc::tcsetattr(fd.as_raw_fd(), libc::TCSADRAIN, termios) }).and(Ok(()))
 }
 
