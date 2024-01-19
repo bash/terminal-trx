@@ -67,9 +67,18 @@ pub fn terminal() -> io::Result<Terminal> {
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
 #[cfg(unix)]
-pub trait Transceive: io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd {}
+pub trait Transceive:
+    io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
+{
+}
+
+/// A trait for objects that are both [`io::Read`] and [`io::Write`].
 #[cfg(not(unix))]
-pub trait Transceive: io::Read + io::Write {}
+pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
+
+mod sealed {
+    pub trait Sealed {}
+}
 
 /// A readable and writable handle to the terminal (or TTY), created using [`terminal()`].
 /// You can read and write data using the [`io::Read`] and [`io::Write`] implementations respectively.
@@ -81,6 +90,7 @@ pub struct Terminal(imp::Terminal);
 #[cfg(test)]
 static_assertions::assert_impl_all!(Terminal: Send, Sync, std::panic::UnwindSafe, std::panic::RefUnwindSafe);
 
+impl sealed::Sealed for Terminal {}
 impl Transceive for Terminal {}
 
 impl io::Read for Terminal {
@@ -151,6 +161,7 @@ impl TerminalLock<'_> {
     }
 }
 
+impl sealed::Sealed for TerminalLock<'_> {}
 impl Transceive for TerminalLock<'_> {}
 
 impl<'a> io::Read for TerminalLock<'a> {
@@ -182,6 +193,7 @@ struct StdioLocks {
 #[derive(Debug)]
 pub struct RawModeGuard<'a>(imp::RawModeGuard<'a>);
 
+impl sealed::Sealed for RawModeGuard<'_> {}
 impl Transceive for RawModeGuard<'_> {}
 
 impl<'a> io::Read for RawModeGuard<'a> {
