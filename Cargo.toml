@@ -9,5 +9,8 @@ thiserror = "1.0.56"
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.152"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52.0", features = ["Win32_System_Console", "Win32_Storage_FileSystem", "Win32_Foundation"] }
+
 [dev-dependencies]
 static_assertions = "1.1.0"

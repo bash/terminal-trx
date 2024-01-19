@@ -37,9 +37,13 @@ use thiserror::Error;
 mod unix;
 #[cfg(unix)]
 use unix as imp;
-#[cfg(not(unix))]
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows as imp;
+#[cfg(not(any(unix, windows)))]
 mod unsupported;
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 use unsupported as imp;
 
 static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
@@ -156,6 +160,10 @@ impl TerminalLock<'_> {
     /// Raw mode has two effects:
     /// * Input typed into the terminal is not visible.
     /// * Input is can be read immediately (usually input is only available after a newline character).
+    ///
+    /// ### Windows
+    /// This function returns [`io::ErrorKind::Unsupported`] if the standard input is
+    /// connected to a MSYS/Cygwin terminal.
     pub fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
         self.inner.enable_raw_mode().map(RawModeGuard)
     }
