@@ -1,7 +1,7 @@
 use self::console_mode::{
     enable_raw_mode, get_console_mode, is_raw_mode_enabled, set_console_mode,
 };
-use crate::{StdioLocks, TransceiveExt};
+use crate::{ConsoleHandles, StdioLocks};
 use msys::msys_tty_on;
 use std::fs::{File, OpenOptions};
 use std::io::{self, IsTerminal};
@@ -212,7 +212,7 @@ fn to_io_result(result: BOOL) -> io::Result<()> {
     }
 }
 
-impl TransceiveExt for super::Terminal {
+impl ConsoleHandles for super::Terminal {
     fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.0.conin.as_handle()
     }
@@ -222,7 +222,7 @@ impl TransceiveExt for super::Terminal {
     }
 }
 
-impl TransceiveExt for super::TerminalLock<'_> {
+impl ConsoleHandles for super::TerminalLock<'_> {
     fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.inner.conin.as_handle()
     }
@@ -232,7 +232,7 @@ impl TransceiveExt for super::TerminalLock<'_> {
     }
 }
 
-impl TransceiveExt for super::RawModeGuard<'_> {
+impl ConsoleHandles for super::RawModeGuard<'_> {
     fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.0.inner.conin.as_handle()
     }

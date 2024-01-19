@@ -1,5 +1,5 @@
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(clippy::undocumented_unsafe_blocks)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Provides a handle to the terminal of the current process that is both readable and writable.
 //!
@@ -77,12 +77,17 @@ pub trait Transceive:
 }
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(not(unix))]
+#[cfg(windows)]
+pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
+
+/// A trait for objects that are both [`io::Read`] and [`io::Write`].
+#[cfg(not(any(windows, unix)))]
 pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
 
-/// Windows-specific extensions to [`Transceive`].
+/// A trait to borrow the console handles from the underlying console.
 #[cfg(windows)]
-pub trait TransceiveExt: Transceive {
+#[cfg_attr(docsrs, doc(cfg(windows)))]
+pub trait ConsoleHandles {
     /// Returns a handle to the consoles's input buffer `CONIN$`.
     fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_>;
 
