@@ -221,7 +221,7 @@ impl AsRawFd for super::RawModeGuard<'_> {
 }
 
 pub(crate) struct RawModeGuard<'a> {
-    pub(crate) inner: &'a mut Terminal,
+    inner: &'a mut Terminal,
     old_termios: Option<termios>,
 }
 
@@ -230,6 +230,22 @@ impl fmt::Debug for RawModeGuard<'_> {
         f.debug_struct("RawModeGuard")
             .field("inner", &self.inner)
             .finish_non_exhaustive()
+    }
+}
+
+impl io::Write for RawModeGuard<'_> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.inner.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+impl io::Read for RawModeGuard<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
     }
 }
 

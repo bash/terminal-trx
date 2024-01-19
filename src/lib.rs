@@ -37,10 +37,10 @@ use thiserror::Error;
 mod unix;
 #[cfg(unix)]
 use unix as imp;
-#[cfg(windows)]
-mod windows;
-#[cfg(windows)]
-use windows as imp;
+#[cfg(not(unix))]
+mod unsupported;
+#[cfg(not(unix))]
+use unsupported as imp;
 
 static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
 
@@ -186,16 +186,16 @@ impl Transceive for RawModeGuard<'_> {}
 
 impl<'a> io::Read for RawModeGuard<'a> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.inner.read(buf)
+        self.0.read(buf)
     }
 }
 
 impl<'a> io::Write for RawModeGuard<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.inner.write(buf)
+        self.0.write(buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.0.inner.flush()
+        self.0.flush()
     }
 }
