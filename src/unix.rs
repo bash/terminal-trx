@@ -306,7 +306,7 @@ mod tests {
     fn reopened_tty_can_be_written_to() {
         let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
         let mut tty = reopen_tty(user_fd.as_fd()).unwrap();
-        tty.write(b"foo").unwrap();
+        tty.write_all(b"foo").unwrap();
     }
 
     #[test]
@@ -350,7 +350,7 @@ mod tests {
     fn is_not_same_file_with_different_underlying_file() {
         let file_1 = OpenOptions::new()
             .read(true)
-            .open(env::args().nth(0).unwrap())
+            .open(env::args().next().unwrap())
             .unwrap();
         let file_2 = OpenOptions::new().read(true).open("/dev/null").unwrap();
         assert!(!is_same_file(file_1.as_fd(), file_2.as_fd()).unwrap());
@@ -370,9 +370,13 @@ mod tests {
         //   Open the device for both reading and writing.
         // O_NOCTTY:
         //   Do not make this device the controlling terminal for the process.
+        // SAFETY: We check that the file descriptor is valid (not -1).
         let fd = to_io_result(unsafe { libc::posix_openpt(libc::O_RDWR | libc::O_NOCTTY) })?;
+        // SAFETY: We just created the fd, so we know it's valid.
         to_io_result(unsafe { grantpt(fd) })?;
+        // SAFETY: We just created the fd, so we know it's valid.
         to_io_result(unsafe { unlockpt(fd) })?;
+        // SAFETY: posix_openpt creates a new fd for us.
         Ok(unsafe { OwnedFd::from_raw_fd(fd) })
     }
 
@@ -381,8 +385,10 @@ mod tests {
         let mut buf = Vec::with_capacity(64);
 
         loop {
+            // SAFETY: We pass the capacity of our vec to ptsname_r.
             let code = unsafe { libc::ptsname_r(fd.as_raw_fd(), buf.as_mut_ptr(), buf.capacity()) };
             match code {
+                // SAFETY: We own the pointer and we know that if ptsname_r is successful, it returns a null-terminated string.
                 0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
                 libc::ERANGE => buf.reserve(64),
                 code => return Err(io::Error::from_raw_os_error(code)),
@@ -404,6 +410,8 @@ mod tests {
         // the buffer size on OSX is 128, defined by sys/ttycom.h
         let buf: [i8; 128] = [0; 128];
 
+        // SAFETY: Our buffer is big enough according to the docs.
+        // Creating the CStr is also ok, since we know that we get back a null-terminated string.
         unsafe {
             match ioctl(fd.as_raw_fd(), TIOCPTYGNAME as c_ulong, &buf) {
                 0 => {
