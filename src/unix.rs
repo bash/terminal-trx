@@ -61,7 +61,7 @@ fn is_read_write(fd: BorrowedFd) -> io::Result<bool> {
 }
 
 fn reopen_tty(fd: BorrowedFd) -> io::Result<File> {
-    let name = ptsname_r(fd)?;
+    let name = ttyname_r(fd)?;
     OpenOptions::new()
         .read(true)
         .write(true)
@@ -249,20 +249,24 @@ fn to_io_result(value: c_int) -> io::Result<c_int> {
     }
 }
 
-// TODO: grow buffer if too small
+/// `ttyname_r` returns the path to the terminal device.
 #[cfg(not(target_os = "macos"))]
-fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
-    let mut buf = vec![0; 256];
-    let code = unsafe { libc::ptsname_r(fd.as_raw_fd(), buf.as_mut_ptr().cast(), buf.len()) };
-    if code == 0 {
-        Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() })
-    } else {
-        Err(io::Error::from_raw_os_error(code))
+fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
+    let mut buf = Vec::with_capacity(64);
+
+    loop {
+        let code = unsafe { libc::ttyname_r(fd.as_raw_fd(), buf.as_mut_ptr(), buf.capacity()) };
+        match code {
+            0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
+            libc::ERANGE => buf.reserve(64),
+            code => return Err(io::Error::from_raw_os_error(code)),
+        }
     }
 }
 
+/// macOS does not have `ttyname_r` (the race free version), so we have to resort to `ioctl`.
 #[cfg(target_os = "macos")]
-fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
+fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
     // This is based on
     // https://github.com/Mobivity/nix-ptsname_r-shim/blob/master/src/lib.rs
     // which in turn is based on
@@ -281,6 +285,66 @@ fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
                 Ok(res)
             }
             _ => Err(io::Error::last_os_error()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(target_os = "macos")]
+    use super::ttyname_r as ptsname_r;
+    use super::*;
+    use libc::{grantpt, unlockpt};
+    use std::io::Write;
+    use std::os::fd::OwnedFd;
+
+    #[test]
+    fn ttyname_r_returns_successfully() {
+        let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
+        let name = ttyname_r(user_fd.as_fd()).unwrap();
+        let name_as_str = name.to_str().unwrap();
+        assert!(!name_as_str.is_empty());
+        assert!(name_as_str.starts_with("/dev/"));
+    }
+
+    #[test]
+    fn reopened_tty_can_be_written_to() {
+        let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
+        let mut tty = reopen_tty(user_fd.as_fd()).unwrap();
+        tty.write(b"foo").unwrap();
+    }
+
+    fn create_pty_pair() -> io::Result<(OwnedFd, OwnedFd)> {
+        let controlling_fd = openpty()?;
+        let user_fd: OwnedFd = File::open(OsStr::from_bytes(
+            ptsname_r(controlling_fd.as_fd())?.as_bytes(),
+        ))?
+        .into();
+        Ok((controlling_fd, user_fd))
+    }
+
+    fn openpty() -> io::Result<OwnedFd> {
+        // O_RDWR:
+        //   Open the device for both reading and writing.
+        // O_NOCTTY:
+        //   Do not make this device the controlling terminal for the process.
+        let fd = to_io_result(unsafe { libc::posix_openpt(libc::O_RDWR | libc::O_NOCTTY) })?;
+        to_io_result(unsafe { grantpt(fd) })?;
+        to_io_result(unsafe { unlockpt(fd) })?;
+        Ok(unsafe { OwnedFd::from_raw_fd(fd) })
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
+        let mut buf = Vec::with_capacity(64);
+
+        loop {
+            let code = unsafe { libc::ptsname_r(fd.as_raw_fd(), buf.as_mut_ptr(), buf.capacity()) };
+            match code {
+                0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
+                libc::ERANGE => buf.reserve(64),
+                code => return Err(io::Error::from_raw_os_error(code)),
+            }
         }
     }
 }

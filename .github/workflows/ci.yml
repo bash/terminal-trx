@@ -22,5 +22,9 @@ jobs:
       run: cargo fmt -- --check
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- --deny warnings
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
     - name: Run tests
       run: cargo test
