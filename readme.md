@@ -16,11 +16,11 @@ let mut line = String::new();
 reader.read_line(&mut line).unwrap();
 ```
 
-## Whishlist
+## Wishlist
 These are some features that I would like to include in this crate,
 but have not yet had the time to implement. Anyone is welcome to create a PR :)
 
-* [ ] Enable raw mode for the terminal
+* [x] Enable raw mode for the terminal
 * [ ] Share the `Terminal` instance (like `stdout`, `stderr`, `stdin` in the standard library do). (Is this a good idea?)
 * [ ] Add integration tests (this is a tricky one because one needs to create a pty for that).
 
