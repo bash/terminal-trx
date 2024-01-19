@@ -3,7 +3,7 @@
 
 //! Provides a handle to the terminal of the current process that is both readable and writable.
 //!
-//! ## Usage
+//! ## Example: Read and Write
 //!```no_run
 //! use terminal_trx::terminal;
 //! use std::io::{BufReader, BufRead as _, Write as _};
@@ -15,6 +15,17 @@
 //! let mut reader = BufReader::new(&mut terminal);
 //! let mut line = String::new();
 //! reader.read_line(&mut line).unwrap();
+//! ```
+//!
+//! ## Example: Enable Raw Mode
+//! ```no_run
+//! use terminal_trx::terminal;
+//!
+//! let mut tty = terminal().unwrap();
+//! let mut lock = tty.lock().unwrap();
+//! let mut raw_mode = lock.enable_raw_mode().unwrap();
+//!
+//! // You can now perform read and write operations using `raw_mode`.
 //! ```
 
 use std::io;
@@ -54,6 +65,12 @@ pub fn terminal() -> io::Result<Terminal> {
     imp::terminal().map(Terminal)
 }
 
+/// A trait for objects that are both [`io::Read`] and [`io::Write`].
+#[cfg(unix)]
+pub trait Transceive: io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd {}
+#[cfg(not(unix))]
+pub trait Transceive: io::Read + io::Write {}
+
 /// A readable and writable handle to the terminal (or TTY), created using [`terminal()`].
 /// You can read and write data using the [`io::Read`] and [`io::Write`] implementations respectively.
 ///
@@ -63,6 +80,8 @@ pub struct Terminal(imp::Terminal);
 
 #[cfg(test)]
 static_assertions::assert_impl_all!(Terminal: Send, Sync, std::panic::UnwindSafe, std::panic::RefUnwindSafe);
+
+impl Transceive for Terminal {}
 
 impl io::Read for Terminal {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -121,6 +140,19 @@ pub struct TerminalLock<'a> {
 #[cfg(test)]
 static_assertions::assert_not_impl_any!(TerminalLock<'_>: Send, Sync);
 
+impl TerminalLock<'_> {
+    /// Enables raw mode on this terminal for the lifetime of the returned guard.
+    ///
+    /// Raw mode has two effects:
+    /// * Input typed into the terminal is not visible.
+    /// * Input is can be read immediately (usually input is only available after a newline character).
+    pub fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
+        self.inner.enable_raw_mode().map(RawModeGuard)
+    }
+}
+
+impl Transceive for TerminalLock<'_> {}
+
 impl<'a> io::Read for TerminalLock<'a> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
@@ -145,4 +177,25 @@ struct StdioLocks {
     stdout_lock: Option<io::StdoutLock<'static>>,
     #[allow(dead_code)]
     stderr_lock: Option<io::StderrLock<'static>>,
+}
+
+#[derive(Debug)]
+pub struct RawModeGuard<'a>(imp::RawModeGuard<'a>);
+
+impl Transceive for RawModeGuard<'_> {}
+
+impl<'a> io::Read for RawModeGuard<'a> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.inner.read(buf)
+    }
+}
+
+impl<'a> io::Write for RawModeGuard<'a> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.inner.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.inner.flush()
+    }
 }

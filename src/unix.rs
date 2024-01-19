@@ -1,13 +1,15 @@
-use libc::{c_int, fcntl, F_GETFL, O_RDWR};
+use crate::StdioLocks;
+use libc::{c_int, fcntl, termios, F_GETFL, O_RDWR};
 use std::ffi::{CStr, CString, OsStr};
+use std::fmt;
 use std::fs::{File, OpenOptions};
-use std::io::{self, stderr, stdin, stdout, IsTerminal, StderrLock, StdinLock, StdoutLock};
+use std::io::{self, stderr, stdin, stdout, IsTerminal};
 use std::mem::{self, ManuallyDrop};
 use std::ops::{Deref, DerefMut};
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd as _};
 use std::os::unix::ffi::OsStrExt;
 
-use crate::StdioLocks;
+mod attr;
 
 pub(crate) fn terminal() -> io::Result<Terminal> {
     None.or_else(|| reuse_tty_from_stdio(stderr).transpose())
@@ -98,6 +100,26 @@ impl Terminal {
             stderr_lock: self.same_as_stderr.then(|| stderr().lock()),
         }
     }
+
+    pub(crate) fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
+        let fd = self.file.as_fd();
+        let old_termios = attr::get_terminal_attr(fd)?;
+
+        if !attr::is_raw_mode_enabled(&old_termios) {
+            let mut termios = old_termios;
+            attr::enable_raw_mode(&mut termios);
+            attr::set_terminal_attr(fd, &termios)?;
+            Ok(RawModeGuard {
+                inner: self,
+                old_termios: Some(old_termios),
+            })
+        } else {
+            Ok(RawModeGuard {
+                inner: self,
+                old_termios: None,
+            })
+        }
+    }
 }
 
 impl Terminal {
@@ -162,16 +184,6 @@ impl DerefMut for TerminalFile {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct TerminalLock {
-    #[allow(dead_code)]
-    stdin_lock: Option<StdinLock<'static>>,
-    #[allow(dead_code)]
-    stdout_lock: Option<StdoutLock<'static>>,
-    #[allow(dead_code)]
-    stderr_lock: Option<StderrLock<'static>>,
-}
-
 impl AsFd for super::Terminal {
     fn as_fd(&self) -> std::os::unix::prelude::BorrowedFd<'_> {
         self.0.file.as_fd()
@@ -184,6 +196,12 @@ impl AsFd for super::TerminalLock<'_> {
     }
 }
 
+impl AsFd for super::RawModeGuard<'_> {
+    fn as_fd(&self) -> std::os::unix::prelude::BorrowedFd<'_> {
+        self.0.inner.file.as_fd()
+    }
+}
+
 impl AsRawFd for super::Terminal {
     fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
         self.0.file.as_raw_fd()
@@ -193,6 +211,33 @@ impl AsRawFd for super::Terminal {
 impl AsRawFd for super::TerminalLock<'_> {
     fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
         self.inner.file.as_raw_fd()
+    }
+}
+
+impl AsRawFd for super::RawModeGuard<'_> {
+    fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
+        self.0.inner.file.as_raw_fd()
+    }
+}
+
+pub(crate) struct RawModeGuard<'a> {
+    pub(crate) inner: &'a mut Terminal,
+    old_termios: Option<termios>,
+}
+
+impl fmt::Debug for RawModeGuard<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RawModeGuard")
+            .field("inner", &self.inner)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Drop for RawModeGuard<'_> {
+    fn drop(&mut self) {
+        if let Some(old_termios) = self.old_termios {
+            _ = attr::set_terminal_attr(self.inner.file.as_fd(), &old_termios);
+        }
     }
 }
 
