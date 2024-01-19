@@ -269,19 +269,13 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
 /// macOS does not have `ttyname_r` (the race free version), so we have to resort to `ioctl`.
 #[cfg(target_os = "macos")]
 fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
-    // This is based on
-    // https://github.com/Mobivity/nix-ptsname_r-shim/blob/master/src/lib.rs
-    // which in turn is based on
-    // https://blog.tarq.io/ptsname-on-osx-with-rust/
-    // and its derivative
-    // https://github.com/philippkeller/rexpect/blob/a71dd02/src/process.rs#L67
-    use libc::{c_ulong, ioctl, TIOCPTYGNAME};
+    use libc::{c_ulong, fcntl, F_GETPATH, PATH_MAX};
 
-    // the buffer size on OSX is 128, defined by sys/ttycom.h
-    let buf: [i8; 128] = [0; 128];
+    // the buffer size must be >= MAXPATHLEN, see `man fcntl`
+    let buf: [i8; PATH_MAX] = [0; PATH_MAX];
 
     unsafe {
-        match ioctl(fd.as_raw_fd(), TIOCPTYGNAME as c_ulong, &buf) {
+        match fcntl(fd.as_raw_fd(), F_GETPATH as c_ulong, &buf) {
             0 => {
                 let res = CStr::from_ptr(buf.as_ptr()).to_owned();
                 Ok(res)
@@ -293,8 +287,6 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_os = "macos")]
-    use super::ttyname_r as ptsname_r;
     use super::*;
     use libc::{grantpt, unlockpt};
     use std::io::Write;
@@ -346,6 +338,31 @@ mod tests {
                 0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
                 libc::ERANGE => buf.reserve(64),
                 code => return Err(io::Error::from_raw_os_error(code)),
+            }
+        }
+    }
+
+    /// macOS does not have `ptsname_r` (the race free version), so we have to resort to `ioctl`.
+    #[cfg(target_os = "macos")]
+    fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
+        // This is based on
+        // https://github.com/Mobivity/nix-ptsname_r-shim/blob/master/src/lib.rs
+        // which in turn is based on
+        // https://blog.tarq.io/ptsname-on-osx-with-rust/
+        // and its derivative
+        // https://github.com/philippkeller/rexpect/blob/a71dd02/src/process.rs#L67
+        use libc::{c_ulong, ioctl, TIOCPTYGNAME};
+
+        // the buffer size on OSX is 128, defined by sys/ttycom.h
+        let buf: [i8; 128] = [0; 128];
+
+        unsafe {
+            match ioctl(fd.as_raw_fd(), TIOCPTYGNAME as c_ulong, &buf) {
+                0 => {
+                    let res = CStr::from_ptr(buf.as_ptr()).to_owned();
+                    Ok(res)
+                }
+                _ => Err(io::Error::last_os_error()),
             }
         }
     }
