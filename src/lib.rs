@@ -80,6 +80,16 @@ pub trait Transceive:
 #[cfg(not(unix))]
 pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
 
+/// Windows-specific extensions to [`Transceive`].
+#[cfg(windows)]
+pub trait TransceiveExt: Transceive {
+    /// Returns a handle to the consoles's input buffer `CONIN$`.
+    fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_>;
+
+    /// Returns a handle to the consoles's screen buffer `CONOUT$`.
+    fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_>;
+}
+
 mod sealed {
     pub trait Sealed {}
 }

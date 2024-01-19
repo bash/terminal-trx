@@ -1,7 +1,7 @@
 use self::console_mode::{
     enable_raw_mode, get_console_mode, is_raw_mode_enabled, set_console_mode,
 };
-use crate::StdioLocks;
+use crate::{StdioLocks, TransceiveExt};
 use msys::msys_tty_on;
 use std::fs::{File, OpenOptions};
 use std::io::{self, IsTerminal};
@@ -209,5 +209,35 @@ fn to_io_result(result: BOOL) -> io::Result<()> {
         Err(io::Error::last_os_error())
     } else {
         Ok(())
+    }
+}
+
+impl TransceiveExt for super::Terminal {
+    fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.0.conin.as_handle()
+    }
+
+    fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.0.conout.as_handle()
+    }
+}
+
+impl TransceiveExt for super::TerminalLock<'_> {
+    fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.inner.conin.as_handle()
+    }
+
+    fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.inner.conout.as_handle()
+    }
+}
+
+impl TransceiveExt for super::RawModeGuard<'_> {
+    fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.0.inner.conin.as_handle()
+    }
+
+    fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
+        self.0.inner.conout.as_handle()
     }
 }
