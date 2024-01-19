@@ -289,6 +289,7 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
 mod tests {
     use super::*;
     use libc::{grantpt, unlockpt};
+    use std::env;
     use std::io::Write;
     use std::os::fd::OwnedFd;
 
@@ -306,6 +307,53 @@ mod tests {
         let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
         let mut tty = reopen_tty(user_fd.as_fd()).unwrap();
         tty.write(b"foo").unwrap();
+    }
+
+    #[test]
+    fn is_read_write_returns_true_for_read_write_fd() {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/null")
+            .unwrap();
+        assert!(is_read_write(file.as_fd()).unwrap());
+    }
+
+    #[test]
+    fn is_read_write_returns_false_for_read_only_fd() {
+        let file = OpenOptions::new().read(true).open("/dev/null").unwrap();
+        assert!(!is_read_write(file.as_fd()).unwrap());
+    }
+
+    #[test]
+    fn is_read_write_returns_false_for_write_only_fd() {
+        let file = OpenOptions::new().write(true).open("/dev/null").unwrap();
+        assert!(!is_read_write(file.as_fd()).unwrap());
+    }
+
+    #[test]
+    fn is_same_file_with_same_fd() {
+        let file = stdin();
+        let fd = file.as_fd();
+        assert!(is_same_file(fd, fd).unwrap());
+    }
+
+    #[test]
+    fn is_same_file_with_different_fd_but_same_underlying_file() {
+        let file_1 = OpenOptions::new().read(true).open("/dev/null").unwrap();
+        let file_2 = OpenOptions::new().read(true).open("/dev/null").unwrap();
+        assert!(file_1.as_raw_fd() != file_2.as_raw_fd());
+        assert!(is_same_file(file_1.as_fd(), file_2.as_fd()).unwrap());
+    }
+
+    #[test]
+    fn is_not_same_file_with_different_underlying_file() {
+        let file_1 = OpenOptions::new()
+            .read(true)
+            .open(env::args().nth(0).unwrap())
+            .unwrap();
+        let file_2 = OpenOptions::new().read(true).open("/dev/null").unwrap();
+        assert!(!is_same_file(file_1.as_fd(), file_2.as_fd()).unwrap());
     }
 
     fn create_pty_pair() -> io::Result<(OwnedFd, OwnedFd)> {
