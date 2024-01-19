@@ -269,13 +269,13 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
 /// macOS does not have `ttyname_r` (the race free version), so we have to resort to `ioctl`.
 #[cfg(target_os = "macos")]
 fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
-    use libc::{c_ulong, fcntl, F_GETPATH, PATH_MAX};
+    use libc::{F_GETPATH, PATH_MAX};
 
     // the buffer size must be >= MAXPATHLEN, see `man fcntl`
-    let buf: [i8; PATH_MAX] = [0; PATH_MAX];
+    let buf: [i8; PATH_MAX as usize] = [0; PATH_MAX as usize];
 
     unsafe {
-        match fcntl(fd.as_raw_fd(), F_GETPATH as c_ulong, &buf) {
+        match fcntl(fd.as_raw_fd(), F_GETPATH as c_int, &buf) {
             0 => {
                 let res = CStr::from_ptr(buf.as_ptr()).to_owned();
                 Ok(res)
