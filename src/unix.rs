@@ -266,7 +266,7 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
     }
 }
 
-/// macOS does not have `ttyname_r` (the race free version), so we have to resort to `ioctl`.
+/// macOS does not have `ttyname_r` (the race free version), so we have to resort to `fcntl`.
 #[cfg(target_os = "macos")]
 fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
     use libc::{F_GETPATH, PATH_MAX};
