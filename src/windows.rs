@@ -8,17 +8,24 @@ use std::io::{self, IsTerminal};
 use std::mem::ManuallyDrop;
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, RawHandle};
 use thiserror::Error;
-use windows_sys::Win32::Foundation::BOOL;
+use windows_sys::Win32::Foundation::{CompareObjectHandles, BOOL};
 use windows_sys::Win32::System::Console::CONSOLE_MODE;
 
 mod console_mode;
 mod msys;
 
 pub(crate) fn terminal() -> io::Result<Terminal> {
-    // TODO: Track which standard I/O handles are the same.
+    let conin = conin()?;
+    let conout = conout()?;
+    let conin_same_as_stdin = compare_object_handles(conin.as_handle(), io::stdin());
+    let conout_same_as_stdout = compare_object_handles(conout.as_handle(), io::stdout());
+    let conout_same_as_stderr = compare_object_handles(conout.as_handle(), io::stderr());
     Ok(Terminal {
-        conin: conin()?,
-        conout: conout()?,
+        conin,
+        conout,
+        conin_same_as_stdin,
+        conout_same_as_stdout,
+        conout_same_as_stderr,
     })
 }
 
@@ -49,6 +56,9 @@ fn conout() -> io::Result<ConsoleBuffer> {
 pub(crate) struct Terminal {
     conin: ConsoleBuffer,
     conout: ConsoleBuffer,
+    conin_same_as_stdin: bool,
+    conout_same_as_stdout: bool,
+    conout_same_as_stderr: bool,
 }
 
 #[derive(Debug)]
@@ -132,10 +142,13 @@ impl io::Read for ConsoleBuffer {
 
 impl Terminal {
     pub(crate) fn lock_stdio(&mut self) -> StdioLocks {
+        let stdin_lock = self.conin_same_as_stdin.then(|| io::stdin().lock());
+        let stdout_lock = self.conout_same_as_stdout.then(|| io::stdout().lock());
+        let stderr_lock = self.conout_same_as_stderr.then(|| io::stderr().lock());
         StdioLocks {
-            stdin_lock: None,
-            stdout_lock: None,
-            stderr_lock: None,
+            stdin_lock,
+            stdout_lock,
+            stderr_lock,
         }
     }
 
@@ -240,4 +253,12 @@ impl ConsoleHandles for super::RawModeGuard<'_> {
     fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {
         self.0.inner.conout.as_handle()
     }
+}
+
+fn compare_object_handles(first: impl AsRawHandle, second: impl AsRawHandle) -> bool {
+    use windows_sys::Win32::Foundation::HANDLE;
+    let first = first.as_raw_handle() as HANDLE;
+    let second = second.as_raw_handle() as HANDLE;
+    // SAFETY: We pass two valid handles
+    unsafe { CompareObjectHandles(first, second) == 1 }
 }
