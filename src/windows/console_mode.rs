@@ -1,6 +1,5 @@
 use std::io;
 use std::os::windows::io::{AsRawHandle as _, BorrowedHandle};
-
 use windows_sys::Win32::System::Console::{
     GetConsoleMode, SetConsoleMode, CONSOLE_MODE, ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT,
 };
