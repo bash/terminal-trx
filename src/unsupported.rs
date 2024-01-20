@@ -1,7 +1,6 @@
-use thiserror::Error;
-
 use crate::StdioLocks;
 use std::{io, marker::PhantomData};
+use thiserror::Error;
 
 pub(crate) fn terminal() -> io::Result<Terminal> {
     Err(io::Error::new(io::ErrorKind::Unsupported, UnsupportedError))
@@ -16,27 +15,27 @@ pub(crate) struct Terminal {}
 
 impl io::Write for Terminal {
     fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-        todo!()
+        unreachable!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        todo!()
+        unreachable!()
     }
 }
 
 impl io::Read for Terminal {
     fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        todo!()
+        unreachable!()
     }
 }
 
 impl Terminal {
     pub(crate) fn lock_stdio(&mut self) -> StdioLocks {
-        todo!()
+        unreachable!()
     }
 
     pub(crate) fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
-        todo!()
+        unreachable!()
     }
 }
 
@@ -45,16 +44,16 @@ pub(crate) struct RawModeGuard<'a>(PhantomData<&'a ()>);
 
 impl io::Write for RawModeGuard<'_> {
     fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-        todo!()
+        unreachable!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        todo!()
+        unreachable!()
     }
 }
 
 impl io::Read for RawModeGuard<'_> {
     fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        todo!()
+        unreachable!()
     }
 }
