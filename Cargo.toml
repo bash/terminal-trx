@@ -14,3 +14,6 @@ windows-sys = { version = "0.52.0", features = ["Win32_System_Console", "Win32_S
 
 [dev-dependencies]
 static_assertions = "1.1.0"
+
+[features]
+__test_unsupported = []

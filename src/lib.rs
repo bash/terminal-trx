@@ -33,17 +33,17 @@ use std::marker::PhantomData;
 use std::sync::{Mutex, MutexGuard};
 use thiserror::Error;
 
-#[cfg(unix)]
+#[cfg(all(unix, not(feature = "__test_unsupported")))]
 mod unix;
-#[cfg(unix)]
+#[cfg(all(unix, not(feature = "__test_unsupported")))]
 use unix as imp;
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "__test_unsupported")))]
 mod windows;
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "__test_unsupported")))]
 use windows as imp;
-#[cfg(not(any(unix, windows)))]
+#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
 mod unsupported;
-#[cfg(not(any(unix, windows)))]
+#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
 use unsupported as imp;
 
 static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
@@ -70,22 +70,22 @@ pub fn terminal() -> io::Result<Terminal> {
 }
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(unix)]
+#[cfg(all(unix, not(feature = "__test_unsupported")))]
 pub trait Transceive:
     io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
 {
 }
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "__test_unsupported")))]
 pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(not(any(windows, unix)))]
+#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
 pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
 
 /// A trait to borrow the console handles from the underlying console.
-#[cfg(windows)]
+#[cfg(all(windows, not(feature = "__test_unsupported")))]
 #[cfg_attr(docsrs, doc(cfg(windows)))]
 pub trait ConsoleHandles {
     /// Returns a handle to the consoles's input buffer `CONIN$`.
