@@ -20,9 +20,9 @@ reader.read_line(&mut line).unwrap();
 These are some features that I would like to include in this crate,
 but have not yet had the time to implement. Anyone is welcome to create a PR :)
 
-* [x] Enable raw mode for the terminal
+* [ ] Add integration tests.
 * [ ] Share the `Terminal` instance (like `stdout`, `stderr`, `stdin` in the standard library do). (Is this a good idea?)
-* [ ] Add integration tests (this is a tricky one because one needs to create a pty for that).
+* [ ] Support enabling raw mode on MSYS/Cygwin.
 
 ## Inspiration
 This crate draws inspiration from many great resources, such as:

@@ -1,5 +1,5 @@
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(clippy::undocumented_unsafe_blocks)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Provides a handle to the terminal of the current process that is both readable and writable.
 //!
@@ -37,9 +37,13 @@ use thiserror::Error;
 mod unix;
 #[cfg(unix)]
 use unix as imp;
-#[cfg(not(unix))]
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows as imp;
+#[cfg(not(any(unix, windows)))]
 mod unsupported;
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 use unsupported as imp;
 
 static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
@@ -73,8 +77,23 @@ pub trait Transceive:
 }
 
 /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(not(unix))]
+#[cfg(windows)]
+pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
+
+/// A trait for objects that are both [`io::Read`] and [`io::Write`].
+#[cfg(not(any(windows, unix)))]
 pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
+
+/// A trait to borrow the console handles from the underlying console.
+#[cfg(windows)]
+#[cfg_attr(docsrs, doc(cfg(windows)))]
+pub trait ConsoleHandles {
+    /// Returns a handle to the consoles's input buffer `CONIN$`.
+    fn input_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_>;
+
+    /// Returns a handle to the consoles's screen buffer `CONOUT$`.
+    fn screen_buffer_handle(&self) -> std::os::windows::io::BorrowedHandle<'_>;
+}
 
 mod sealed {
     pub trait Sealed {}
@@ -156,6 +175,10 @@ impl TerminalLock<'_> {
     /// Raw mode has two effects:
     /// * Input typed into the terminal is not visible.
     /// * Input is can be read immediately (usually input is only available after a newline character).
+    ///
+    /// ### Windows
+    /// This function returns an [`Err`] with [`ErrorKind::Unsupported`](`io::ErrorKind::Unsupported`) if the standard input is
+    /// connected to a MSYS/Cygwin terminal.
     pub fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
         self.inner.enable_raw_mode().map(RawModeGuard)
     }
