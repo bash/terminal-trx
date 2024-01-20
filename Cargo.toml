@@ -1,7 +1,14 @@
 [package]
 name = "terminal-trx"
+description = "Provides a handle to the terminal of the current process"
+readme = "readme.md"
+repository = "https://github.com/bash/terminal-trx"
+categories = ["command-line-interface"]
+license = "MIT OR Apache-2.0"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70.0"
+exclude = [".github", ".gitignore", "*.sh"]
 
 [dependencies]
 thiserror = "1.0.56"
