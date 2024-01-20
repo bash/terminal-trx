@@ -177,7 +177,7 @@ impl TerminalLock<'_> {
     /// * Input is can be read immediately (usually input is only available after a newline character).
     ///
     /// ### Windows
-    /// This function returns [`io::ErrorKind::Unsupported`] if the standard input is
+    /// This function returns an [`Err`] with [`ErrorKind::Unsupported`](`io::ErrorKind::Unsupported`) if the standard input is
     /// connected to a MSYS/Cygwin terminal.
     pub fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
         self.inner.enable_raw_mode().map(RawModeGuard)
