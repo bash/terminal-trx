@@ -3,6 +3,8 @@
 [![Docs](https://img.shields.io/docsrs/terminal-trx/latest)](https://docs.rs/terminal-trx)
 [![Crate Version](https://img.shields.io/crates/v/terminal-trx)](https://crates.io/crates/terminal-trx)
 
+*Pronounced: Terminal T-Rex* 🦖
+
 Provides a handle to the terminal of the current process that is both readable and writable.
 
 ## Example
