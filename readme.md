@@ -1,5 +1,8 @@
 # terminal-trx
 
+[![Docs](https://img.shields.io/docsrs/terminal-trx/latest)](https://docs.rs/terminal-trx)
+[![Crate Version](https://img.shields.io/crates/v/terminal-trx)](https://crates.io/crates/terminal-trx)
+
 Provides a handle to the terminal of the current process that is both readable and writable.
 
 ## Example
@@ -15,6 +18,8 @@ let mut reader = BufReader::new(&mut terminal);
 let mut line = String::new();
 reader.read_line(&mut line).unwrap();
 ```
+
+## [Docs](https://docs.rs/terminal-trx)
 
 ## Wishlist
 These are some features that I would like to include in this crate,
