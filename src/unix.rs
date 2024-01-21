@@ -304,15 +304,14 @@ fn ttyname_r(fd: BorrowedFd) -> io::Result<CString> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libc::{grantpt, unlockpt};
+    use pty_utils::pty_pair;
     use std::env;
     use std::io::Write;
-    use std::os::fd::OwnedFd;
 
     #[test]
     fn ttyname_r_returns_successfully() {
-        let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
-        let name = ttyname_r(user_fd.as_fd()).unwrap();
+        let pty = pty_pair().unwrap();
+        let name = ttyname_r(pty.user.as_fd()).unwrap();
         let name_as_str = name.to_str().unwrap();
         assert!(!name_as_str.is_empty());
         assert!(name_as_str.starts_with("/dev/"));
@@ -320,8 +319,8 @@ mod tests {
 
     #[test]
     fn reopened_tty_can_be_written_to() {
-        let (_controlling_fd, user_fd) = create_pty_pair().unwrap();
-        let mut tty = reopen_tty(user_fd.as_fd()).unwrap();
+        let pty = pty_pair().unwrap();
+        let mut tty = reopen_tty(pty.user.as_fd()).unwrap();
         tty.write_all(b"foo").unwrap();
     }
 
@@ -370,72 +369,5 @@ mod tests {
             .unwrap();
         let file_2 = OpenOptions::new().read(true).open("/dev/null").unwrap();
         assert!(!is_same_file(file_1.as_fd(), file_2.as_fd()).unwrap());
-    }
-
-    fn create_pty_pair() -> io::Result<(OwnedFd, OwnedFd)> {
-        let controlling_fd = openpty()?;
-        let user_fd: OwnedFd = File::open(OsStr::from_bytes(
-            ptsname_r(controlling_fd.as_fd())?.as_bytes(),
-        ))?
-        .into();
-        Ok((controlling_fd, user_fd))
-    }
-
-    fn openpty() -> io::Result<OwnedFd> {
-        // O_RDWR:
-        //   Open the device for both reading and writing.
-        // O_NOCTTY:
-        //   Do not make this device the controlling terminal for the process.
-        // SAFETY: We check that the file descriptor is valid (not -1).
-        let fd = to_io_result(unsafe { libc::posix_openpt(libc::O_RDWR | libc::O_NOCTTY) })?;
-        // SAFETY: We just created the fd, so we know it's valid.
-        to_io_result(unsafe { grantpt(fd) })?;
-        // SAFETY: We just created the fd, so we know it's valid.
-        to_io_result(unsafe { unlockpt(fd) })?;
-        // SAFETY: posix_openpt creates a new fd for us.
-        Ok(unsafe { OwnedFd::from_raw_fd(fd) })
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
-        let mut buf = Vec::with_capacity(64);
-
-        loop {
-            // SAFETY: We pass the capacity of our vec to ptsname_r.
-            let code = unsafe { libc::ptsname_r(fd.as_raw_fd(), buf.as_mut_ptr(), buf.capacity()) };
-            match code {
-                // SAFETY: We own the pointer and we know that if ptsname_r is successful, it returns a null-terminated string.
-                0 => return Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_owned() }),
-                libc::ERANGE => buf.reserve(64),
-                code => return Err(io::Error::from_raw_os_error(code)),
-            }
-        }
-    }
-
-    /// macOS does not have `ptsname_r` (the race free version), so we have to resort to `ioctl`.
-    #[cfg(target_os = "macos")]
-    fn ptsname_r(fd: BorrowedFd) -> io::Result<CString> {
-        // This is based on
-        // https://github.com/Mobivity/nix-ptsname_r-shim/blob/master/src/lib.rs
-        // which in turn is based on
-        // https://blog.tarq.io/ptsname-on-osx-with-rust/
-        // and its derivative
-        // https://github.com/philippkeller/rexpect/blob/a71dd02/src/process.rs#L67
-        use libc::{c_ulong, ioctl, TIOCPTYGNAME};
-
-        // the buffer size on OSX is 128, defined by sys/ttycom.h
-        let buf: [i8; 128] = [0; 128];
-
-        // SAFETY: Our buffer is big enough according to the docs.
-        // Creating the CStr is also ok, since we know that we get back a null-terminated string.
-        unsafe {
-            match ioctl(fd.as_raw_fd(), TIOCPTYGNAME as c_ulong, &buf) {
-                0 => {
-                    let res = CStr::from_ptr(buf.as_ptr()).to_owned();
-                    Ok(res)
-                }
-                _ => Err(io::Error::last_os_error()),
-            }
-        }
     }
 }

@@ -18,6 +18,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pty-utils"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -48,6 +55,7 @@ name = "terminal-trx"
 version = "0.1.0"
 dependencies = [
  "libc",
+ "pty-utils",
  "static_assertions",
  "thiserror",
  "windows-sys",

@@ -21,9 +21,9 @@ jobs:
     - name: Check format
       run: cargo fmt -- --check
     - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- --deny warnings
+      run: cargo clippy --workspace --all-targets --all-features -- --deny warnings
     - name: Check fallback implementation
-      run: cargo check --features __test_unsupported
+      run: cargo check --workspace --features __test_unsupported
   test:
     strategy:
       matrix:
