@@ -8,7 +8,7 @@
 Provides a handle to the terminal of the current process that is both readable and writable.
 
 ## Example
-```rust
+```rust,no_run
 use terminal_trx::terminal;
 use std::io::{BufReader, BufRead as _, Write as _};
 

@@ -46,6 +46,10 @@ mod unsupported;
 #[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
 use unsupported as imp;
 
+#[doc = include_str!("../readme.md")]
+#[cfg(doctest)]
+pub mod readme_doctests {}
+
 static TERMINAL_LOCK: Mutex<()> = Mutex::new(());
 
 /// Creates a readable and writable handle to the terminal (or TTY) if available.
