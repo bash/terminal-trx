@@ -1,4 +1,3 @@
-#![deny(clippy::undocumented_unsafe_blocks)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Provides a handle to the terminal of the current process that is both readable and writable.
@@ -217,6 +216,8 @@ struct StdioLocks {
     stderr_lock: Option<io::StderrLock<'static>>,
 }
 
+/// Guard for raw mode on the terminal, disables raw mode on drop.
+/// Can be crated using [`TerminalLock::enable_raw_mode`].
 #[derive(Debug)]
 pub struct RawModeGuard<'a>(imp::RawModeGuard<'a>);
 
