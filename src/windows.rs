@@ -2,12 +2,13 @@ use self::console_mode::{
     enable_raw_mode, get_console_mode, is_raw_mode_enabled, set_console_mode,
 };
 use crate::{ConsoleHandles, StdioLocks};
+use core::fmt;
 use msys::msys_tty_on;
+use std::error;
 use std::fs::{File, OpenOptions};
 use std::io::{self, IsTerminal};
 use std::mem::ManuallyDrop;
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, RawHandle};
-use thiserror::Error;
 use windows_sys::Win32::Foundation::{CompareObjectHandles, BOOL};
 use windows_sys::Win32::System::Console::CONSOLE_MODE;
 
@@ -183,9 +184,19 @@ fn set_raw_mode_if_necessary(handle: BorrowedHandle) -> io::Result<Option<CONSOL
     }
 }
 
-#[derive(Debug, Error)]
-#[error("enabling raw mode on a MSYS/Cygwin terminal is not supported")]
+#[derive(Debug)]
 struct MsysUnsupportedError;
+
+impl fmt::Display for MsysUnsupportedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "enabling raw mode on a MSYS/Cygwin terminal is not supported"
+        )
+    }
+}
+
+impl error::Error for MsysUnsupportedError {}
 
 #[derive(Debug)]
 pub(crate) struct RawModeGuard<'a> {
