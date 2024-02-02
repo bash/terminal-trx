@@ -30,7 +30,6 @@
 use std::io;
 use std::marker::PhantomData;
 use std::sync::{Mutex, MutexGuard};
-use thiserror::Error;
 
 #[cfg(all(unix, not(feature = "__test_unsupported")))]
 mod unix;
@@ -117,17 +116,17 @@ impl Transceive for Terminal {}
 
 impl io::Read for Terminal {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.lock()?.read(buf)
+        self.lock().read(buf)
     }
 }
 
 impl io::Write for Terminal {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.lock()?.write(buf)
+        self.lock().write(buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.lock()?.flush()
+        self.lock().flush()
     }
 }
 
@@ -136,26 +135,15 @@ impl Terminal {
     ///
     /// Until the returned [`TerminalLock`] is dropped, all standard I/O streams
     /// that refer to the same terminal will be locked.
-    pub fn lock(&mut self) -> io::Result<TerminalLock<'_>> {
-        let mutex_guard = TERMINAL_LOCK.lock().map_err(|_| PoisonError::default())?;
+    pub fn lock(&mut self) -> TerminalLock<'_> {
+        let mutex_guard = TERMINAL_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let stdio_locks = self.0.lock_stdio();
-        Ok(TerminalLock {
+        TerminalLock {
             inner: &mut self.0,
             _stdio_locks: stdio_locks,
             _mutex_guard: mutex_guard,
             _phantom_data: PhantomData,
-        })
-    }
-}
-
-/// Error returned by [`Terminal::lock`] if the lock is poisoned.
-#[derive(Debug, Default, Clone, Error)]
-#[error("poisoned lock: another task failed inside")]
-pub struct PoisonError(PhantomData<()>);
-
-impl From<PoisonError> for io::Error {
-    fn from(value: PoisonError) -> Self {
-        io::Error::new(io::ErrorKind::Other, value)
+        }
     }
 }
 
