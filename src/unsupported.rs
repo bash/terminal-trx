@@ -1,14 +1,22 @@
 use crate::StdioLocks;
+use core::fmt;
+use std::error;
 use std::{io, marker::PhantomData};
-use thiserror::Error;
 
 pub(crate) fn terminal() -> io::Result<Terminal> {
     Err(io::Error::new(io::ErrorKind::Unsupported, UnsupportedError))
 }
 
-#[derive(Debug, Error)]
-#[error("this platform is not supported")]
+#[derive(Debug)]
 struct UnsupportedError;
+
+impl fmt::Display for UnsupportedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "this platform is not supported")
+    }
+}
+
+impl error::Error for UnsupportedError {}
 
 #[derive(Debug)]
 pub(crate) struct Terminal {}
