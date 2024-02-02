@@ -21,7 +21,7 @@
 //! use terminal_trx::terminal;
 //!
 //! let mut tty = terminal().unwrap();
-//! let mut lock = tty.lock().unwrap();
+//! let mut lock = tty.lock();
 //! let mut raw_mode = lock.enable_raw_mode().unwrap();
 //!
 //! // You can now perform read and write operations using `raw_mode`.
