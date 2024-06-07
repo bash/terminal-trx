@@ -41,7 +41,9 @@ jobs:
     - name: Build
       run: cargo build --all-features
     - name: Check fallback implementation
-      run: cargo check --workspace --features __test_unsupported
+      run: cargo check --workspace
+      env:
+        RUSTFLAGS: --cfg terminal_trx_test_unsupported
     - name: Docs
       run: cargo doc --all-features
   lint:

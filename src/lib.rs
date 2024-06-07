@@ -33,10 +33,10 @@ use std::marker::PhantomData;
 use std::sync::{Mutex, MutexGuard};
 
 cfg_if! {
-    if #[cfg(all(unix, not(feature = "__test_unsupported")))] {
+    if #[cfg(all(unix, not(terminal_trx_test_unsupported)))] {
         mod unix;
         use unix as imp;
-    } else if #[cfg(all(windows, not(feature = "__test_unsupported")))] {
+    } else if #[cfg(all(windows, not(terminal_trx_test_unsupported)))] {
         mod windows;
         use windows as imp;
     } else {
@@ -73,13 +73,13 @@ pub fn terminal() -> io::Result<Terminal> {
 }
 
 cfg_if! {
-    if #[cfg(all(unix, not(feature = "__test_unsupported")))] {
+    if #[cfg(all(unix, not(terminal_trx_test_unsupported)))] {
         /// A trait for objects that are both [`io::Read`] and [`io::Write`].
         pub trait Transceive:
             io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
         {
         }
-    } else if #[cfg(all(windows, not(feature = "__test_unsupported")))] {
+    } else if #[cfg(all(windows, not(terminal_trx_test_unsupported)))] {
         /// A trait for objects that are both [`io::Read`] and [`io::Write`].
         pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
     } else {
@@ -89,7 +89,7 @@ cfg_if! {
 }
 
 /// A trait to borrow the console handles from the underlying console.
-#[cfg(all(windows, not(feature = "__test_unsupported")))]
+#[cfg(all(windows, not(terminal_trx_test_unsupported)))]
 #[cfg_attr(docsrs, doc(cfg(windows)))]
 pub trait ConsoleHandles {
     /// Returns a handle to the consoles's input buffer `CONIN$`.

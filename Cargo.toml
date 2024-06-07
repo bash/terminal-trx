@@ -25,6 +25,7 @@ static_assertions = "1.1.0"
 [lints.rust]
 missing_debug_implementations = "warn"
 missing_docs = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(terminal_trx_test_unsupported)"] }
 
 [lints.clippy]
 unimplemented = "warn"
@@ -34,6 +35,3 @@ exhaustive_enums = "warn"
 exhaustive_structs = "warn"
 unwrap_used = "deny"
 use_debug = "warn"
-
-[features]
-__test_unsupported = []
