@@ -11,12 +11,15 @@ pub(crate) fn pty_pair() -> io::Result<PtyPair> {
         ptsname_r(controlling.as_fd())?.as_bytes(),
     ))?
     .into();
-    Ok(PtyPair { controlling, user })
+    Ok(PtyPair {
+        _controlling: controlling,
+        user,
+    })
 }
 
 #[derive(Debug)]
 pub(crate) struct PtyPair {
-    pub(crate) controlling: OwnedFd,
+    pub(crate) _controlling: OwnedFd,
     pub(crate) user: OwnedFd,
 }
 
