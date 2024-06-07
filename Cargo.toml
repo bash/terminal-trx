@@ -10,6 +10,9 @@ edition = "2021"
 rust-version = "1.70.0"
 exclude = [".github", ".gitignore", "*.sh"]
 
+[dependencies]
+cfg-if = "1.0.0"
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.152"
 

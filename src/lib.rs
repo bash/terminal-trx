@@ -27,22 +27,23 @@
 //! // You can now perform read and write operations using `raw_mode`.
 //! ```
 
+use cfg_if::cfg_if;
 use std::io;
 use std::marker::PhantomData;
 use std::sync::{Mutex, MutexGuard};
 
-#[cfg(all(unix, not(feature = "__test_unsupported")))]
-mod unix;
-#[cfg(all(unix, not(feature = "__test_unsupported")))]
-use unix as imp;
-#[cfg(all(windows, not(feature = "__test_unsupported")))]
-mod windows;
-#[cfg(all(windows, not(feature = "__test_unsupported")))]
-use windows as imp;
-#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
-mod unsupported;
-#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
-use unsupported as imp;
+cfg_if! {
+    if #[cfg(all(unix, not(feature = "__test_unsupported")))] {
+        mod unix;
+        use unix as imp;
+    } else if #[cfg(all(windows, not(feature = "__test_unsupported")))] {
+        mod windows;
+        use windows as imp;
+    } else {
+        mod unsupported;
+        use unsupported as imp;
+    }
+}
 
 #[doc = include_str!("../readme.md")]
 #[cfg(doctest)]
@@ -71,20 +72,21 @@ pub fn terminal() -> io::Result<Terminal> {
     imp::terminal().map(Terminal)
 }
 
-/// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(all(unix, not(feature = "__test_unsupported")))]
-pub trait Transceive:
-    io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
-{
+cfg_if! {
+    if #[cfg(all(unix, not(feature = "__test_unsupported")))] {
+        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
+        pub trait Transceive:
+            io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
+        {
+        }
+    } else if #[cfg(all(windows, not(feature = "__test_unsupported")))] {
+        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
+        pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
+    } else {
+        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
+        pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
+    }
 }
-
-/// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(all(windows, not(feature = "__test_unsupported")))]
-pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
-
-/// A trait for objects that are both [`io::Read`] and [`io::Write`].
-#[cfg(any(not(any(unix, windows)), feature = "__test_unsupported"))]
-pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
 
 /// A trait to borrow the console handles from the underlying console.
 #[cfg(all(windows, not(feature = "__test_unsupported")))]

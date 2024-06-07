@@ -1,5 +1,3 @@
-#![deny(clippy::undocumented_unsafe_blocks)]
-
 use libc::{grantpt, posix_openpt, unlockpt, O_CLOEXEC, O_NOCTTY, O_RDWR};
 use std::ffi::{c_int, CStr, CString, OsStr};
 use std::fs::File;
@@ -7,7 +5,7 @@ use std::io;
 use std::os::fd::{AsFd as _, AsRawFd as _, BorrowedFd, FromRawFd as _, OwnedFd};
 use std::os::unix::ffi::OsStrExt;
 
-pub fn pty_pair() -> io::Result<PtyPair> {
+pub(crate) fn pty_pair() -> io::Result<PtyPair> {
     let controlling = openpty()?;
     let user = File::open(OsStr::from_bytes(
         ptsname_r(controlling.as_fd())?.as_bytes(),
@@ -17,9 +15,9 @@ pub fn pty_pair() -> io::Result<PtyPair> {
 }
 
 #[derive(Debug)]
-pub struct PtyPair {
-    pub controlling: OwnedFd,
-    pub user: OwnedFd,
+pub(crate) struct PtyPair {
+    pub(crate) controlling: OwnedFd,
+    pub(crate) user: OwnedFd,
 }
 
 fn openpty() -> io::Result<OwnedFd> {
