@@ -19,9 +19,6 @@ windows-sys = { version = "0.52.0", features = ["Win32_System_Console", "Win32_S
 [dev-dependencies]
 static_assertions = "1.1.0"
 
-[target.'cfg(unix)'.dev-dependencies]
-pty-utils = { path = "crates/pty-utils" }
-
 [lints.rust]
 missing_debug_implementations = "warn"
 missing_docs = "warn"
@@ -37,6 +34,3 @@ use_debug = "warn"
 
 [features]
 __test_unsupported = []
-
-[workspace]
-members = ["crates/pty-utils"]

@@ -9,13 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
-name = "pty-utils"
-version = "0.1.0"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26,7 +19,6 @@ name = "terminal-trx"
 version = "0.2.0"
 dependencies = [
  "libc",
- "pty-utils",
  "static_assertions",
  "windows-sys",
 ]
