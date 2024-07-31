@@ -43,7 +43,7 @@ jobs:
     - name: Check fallback implementation
       run: cargo check --workspace
       env:
-        RUSTFLAGS: --cfg terminal_trx_test_unsupported
+        RUSTFLAGS: --cfg terminal_trx_test_unsupported -Dwarnings
     - name: Docs
       run: cargo doc --all-features
   lint:
