@@ -10,7 +10,7 @@ use windows_sys::Win32::Storage::FileSystem::{
 // Source: https://github.com/rust-lang/rust/blob/32ec40c68533f325a3c8fe787b77ef5c9e209b23/library/std/src/sys/pal/windows/io.rs#L82
 pub(super) unsafe fn msys_tty_on(handle: HANDLE) -> bool {
     // Early return if the handle is not a pipe.
-    if GetFileType(handle as isize) != FILE_TYPE_PIPE {
+    if GetFileType(handle) != FILE_TYPE_PIPE {
         return false;
     }
 
@@ -30,7 +30,7 @@ pub(super) unsafe fn msys_tty_on(handle: HANDLE) -> bool {
     };
     // Safety: buffer length is fixed.
     let res = GetFileInformationByHandleEx(
-        handle as isize,
+        handle,
         FileNameInfo,
         &mut name_info as *mut _ as *mut c_void,
         size_of::<FILE_NAME_INFO>() as u32,
