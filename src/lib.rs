@@ -171,6 +171,7 @@ impl TerminalLock<'_> {
     /// Raw mode has two effects:
     /// * Input typed into the terminal is not visible.
     /// * Input is can be read immediately (usually input is only available after a newline character).
+    /// * (Windows) Ensures that VT sequences are processed in both input and output.
     ///
     /// ### Windows
     /// This function returns an [`Err`] with [`ErrorKind::Unsupported`](`io::ErrorKind::Unsupported`) if the standard input is

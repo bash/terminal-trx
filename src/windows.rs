@@ -1,6 +1,4 @@
-use self::console_mode::{
-    enable_raw_mode, get_console_mode, is_raw_mode_enabled, set_console_mode,
-};
+use self::console_mode::{get_console_mode, set_console_mode};
 use crate::{ConsoleHandles, StdioLocks};
 use core::fmt;
 use msys::msys_tty_on;
@@ -155,6 +153,7 @@ impl Terminal {
 
     pub(crate) fn enable_raw_mode(&mut self) -> io::Result<RawModeGuard<'_>> {
         let conin = self.conin.as_handle();
+        let conout = self.conout.as_handle();
 
         // `is_terminal` recognizes MSYS/Cygwin pipes as terminal,
         // but they are not a console, so we bail out.
@@ -166,20 +165,28 @@ impl Terminal {
             ));
         }
 
-        let old_mode = set_raw_mode_if_necessary(conin)?;
+        let old_input_mode =
+            set_raw_mode_if_necessary(conin, console_mode::input::enable_raw_mode)?;
+        let old_output_mode =
+            set_raw_mode_if_necessary(conout, console_mode::output::enable_raw_mode)?;
         Ok(RawModeGuard {
             inner: self,
-            old_mode,
+            old_input_mode,
+            old_output_mode,
         })
     }
 }
 
-fn set_raw_mode_if_necessary(handle: BorrowedHandle) -> io::Result<Option<CONSOLE_MODE>> {
+fn set_raw_mode_if_necessary(
+    handle: BorrowedHandle,
+    enable: fn(CONSOLE_MODE) -> CONSOLE_MODE,
+) -> io::Result<Option<CONSOLE_MODE>> {
     let mode = get_console_mode(handle)?;
-    if is_raw_mode_enabled(mode) {
+    let new_mode = enable(mode);
+    if mode == new_mode {
         Ok(None)
     } else {
-        set_console_mode(handle, enable_raw_mode(mode))?;
+        set_console_mode(handle, new_mode)?;
         Ok(Some(mode))
     }
 }
@@ -201,13 +208,17 @@ impl error::Error for MsysUnsupportedError {}
 #[derive(Debug)]
 pub(crate) struct RawModeGuard<'a> {
     inner: &'a mut Terminal,
-    old_mode: Option<CONSOLE_MODE>,
+    old_input_mode: Option<CONSOLE_MODE>,
+    old_output_mode: Option<CONSOLE_MODE>,
 }
 
 impl Drop for RawModeGuard<'_> {
     fn drop(&mut self) {
-        if let Some(old_mode) = self.old_mode {
+        if let Some(old_mode) = self.old_input_mode {
             _ = set_console_mode(self.inner.conin.as_handle(), old_mode);
+        }
+        if let Some(old_mode) = self.old_output_mode {
+            _ = set_console_mode(self.inner.conout.as_handle(), old_mode);
         }
     }
 }
