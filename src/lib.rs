@@ -72,19 +72,22 @@ pub fn terminal() -> io::Result<Terminal> {
     imp::terminal().map(Terminal)
 }
 
+macro_rules! impl_transceive {
+    ($($extra_supertraits:tt)*) => {
+        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
+        pub trait Transceive: io::Read + io::Write $($extra_supertraits)* + sealed::Sealed {}
+    };
+}
+
 cfg_if! {
-    if #[cfg(all(unix, not(terminal_trx_test_unsupported)))] {
-        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-        pub trait Transceive:
-            io::Read + io::Write + std::os::fd::AsFd + std::os::fd::AsRawFd + sealed::Sealed
-        {
-        }
-    } else if #[cfg(all(windows, not(terminal_trx_test_unsupported)))] {
-        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-        pub trait Transceive: io::Read + io::Write + ConsoleHandles + sealed::Sealed {}
+    if #[cfg(terminal_trx_test_unsupported)] {
+        impl_transceive! { }
+    } else if #[cfg(unix)] {
+        impl_transceive! { + std::os::fd::AsFd + std::os::fd::AsRawFd }
+    } else if #[cfg(windows)] {
+        impl_transceive! { + ConsoleHandles }
     } else {
-        /// A trait for objects that are both [`io::Read`] and [`io::Write`].
-        pub trait Transceive: io::Read + io::Write + sealed::Sealed {}
+        impl_transceive! { }
     }
 }
 
