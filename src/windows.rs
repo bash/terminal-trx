@@ -34,6 +34,9 @@ fn conin() -> io::Result<ConsoleBuffer> {
         .unwrap_or_else(|| {
             OpenOptions::new()
                 .read(true)
+                // The docs for `SetConsoleMode` claim that only GENERIC_READ is needed,
+                // but I get an access denied error without also enabling write access.
+                .write(true)
                 .open("CONIN$")
                 .map(ConsoleBuffer::Owned)
         })
