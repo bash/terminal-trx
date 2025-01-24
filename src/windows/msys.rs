@@ -1,14 +1,20 @@
 use std::ffi::c_void;
 use std::mem::size_of;
+use std::os::windows::io::{AsRawHandle as _, BorrowedHandle};
 use std::os::windows::raw::HANDLE;
 use windows_sys::Win32::Foundation::MAX_PATH;
 use windows_sys::Win32::Storage::FileSystem::{
     FileNameInfo, GetFileInformationByHandleEx, GetFileType, FILE_TYPE_PIPE,
 };
 
+pub(super) fn msys_tty_on(handle: BorrowedHandle<'_>) -> bool {
+    // SAFETY: We pass a valid handle.
+    unsafe { msys_tty_on_unsafe(handle.as_raw_handle()) }
+}
+
 // Adopted from Rust's standard library with minimal changes to use windows_sys.
 // Source: https://github.com/rust-lang/rust/blob/32ec40c68533f325a3c8fe787b77ef5c9e209b23/library/std/src/sys/pal/windows/io.rs#L82
-pub(super) unsafe fn msys_tty_on(handle: HANDLE) -> bool {
+pub(super) unsafe fn msys_tty_on_unsafe(handle: HANDLE) -> bool {
     // Early return if the handle is not a pipe.
     if GetFileType(handle) != FILE_TYPE_PIPE {
         return false;

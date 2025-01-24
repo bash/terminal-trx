@@ -160,8 +160,7 @@ impl Terminal {
 
         // `is_terminal` recognizes MSYS/Cygwin pipes as terminal,
         // but they are not a console, so we bail out.
-        // SAFETY: We pass a valid handle.
-        if unsafe { msys_tty_on(conin.as_raw_handle()) } {
+        if msys_tty_on(conin) {
             return Err(io::Error::new(
                 io::ErrorKind::Unsupported,
                 MsysUnsupportedError,
