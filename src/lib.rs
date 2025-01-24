@@ -184,13 +184,13 @@ impl TerminalLock<'_> {
 impl sealed::Sealed for TerminalLock<'_> {}
 impl Transceive for TerminalLock<'_> {}
 
-impl<'a> io::Read for TerminalLock<'a> {
+impl io::Read for TerminalLock<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
     }
 }
 
-impl<'a> io::Write for TerminalLock<'a> {
+impl io::Write for TerminalLock<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.inner.write(buf)
     }
@@ -218,13 +218,13 @@ pub struct RawModeGuard<'a>(imp::RawModeGuard<'a>);
 impl sealed::Sealed for RawModeGuard<'_> {}
 impl Transceive for RawModeGuard<'_> {}
 
-impl<'a> io::Read for RawModeGuard<'a> {
+impl io::Read for RawModeGuard<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.0.read(buf)
     }
 }
 
-impl<'a> io::Write for RawModeGuard<'a> {
+impl io::Write for RawModeGuard<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.write(buf)
     }
