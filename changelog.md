@@ -1,4 +1,8 @@
 # Changelog
+## 0.2.4
+* Fix "permission denied" errors on windows
+  when enabling raw mode and stdin is redirected.
+
 ## 0.2.3
 * Ensure that virtual terminal sequences are processed on Windows
   when raw mode is enabled. This is needed for <https://github.com/bash/terminal-colorsaurus/issues/19>.
