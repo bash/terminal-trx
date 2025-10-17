@@ -7,7 +7,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, IsTerminal};
 use std::mem::ManuallyDrop;
 use std::os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, RawHandle};
-use windows_sys::Win32::Foundation::{CompareObjectHandles, BOOL};
+use windows_sys::core::BOOL;
+use windows_sys::Win32::Foundation::CompareObjectHandles;
 use windows_sys::Win32::System::Console::CONSOLE_MODE;
 
 mod console_mode;
