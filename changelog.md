@@ -1,4 +1,8 @@
 # Changelog
+## 0.2.5
+* Update `windows-sys` to 0.61
+* Raise the MSRV to 1.74 (this matches `terminal-colorsaurus`' MSRV)
+
 ## 0.2.4
 * Fix "permission denied" errors on windows
   when enabling raw mode and stdin is redirected.
